@@ -2,25 +2,42 @@
 //
 
 #include <iostream>
+#include <time.h>
 #include <Windows.h>
+#include "MemoryStream.h"
 #include "TagFinder.h"
 
 int main(int count, char** args)
 {
-   TagFinder finder;
-   finder.Read();
+   if (count != 2) {
+      puts("Add path to test file as parameter");
+   }
+   FILE* file = nullptr;
+   if (fopen_s(&file, args[1], "rb") != 0)
+   {
+      puts("Failed to open file\n");
+      return 1;
+   }
+   if (fseek(file, 0, SEEK_END))
+      return 1;
+   size_t length = ftell(file);
+   char* buffer = new char[length];
+   fseek(file, 0, SEEK_SET);
+   if (fread_s(buffer, length, 1, length, file) != length) {
+      puts("failed to read file");
+      return 1;
+   }
+   fclose(file);
 
-   system("pause");
+   MemoryStream testFile = MemoryStream(length, buffer);
+   TagFinder finder = TagFinder(testFile, true);
+   clock_t beforeTimeTotal = clock();
+   for (int i = 0; i < 100; i++) {
+      clock_t beforeTime = clock();
+      finder.Read();
+      printf("Time Taken = %dms\n", clock() - beforeTime);
+      testFile.reset();
+   }
+   printf("Total Time Taken = %dms\n", clock() - beforeTimeTotal);
    return 0;
 }
-
-// Run program: Ctrl + F5 or Debug > Start Without Debugging menu
-// Debug program: F5 or Debug > Start Debugging menu
-
-// Tips for Getting Started: 
-//   1. Use the Solution Explorer window to add/manage files
-//   2. Use the Team Explorer window to connect to source control
-//   3. Use the Output window to see build output and other messages
-//   4. Use the Error List window to view errors
-//   5. Go to Project > Add New Item to create new code files, or Project > Add Existing Item to add existing code files to the project
-//   6. In the future, to open this project again, go to File > Open > Project and select the .sln file

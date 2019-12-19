@@ -152,12 +152,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="html_tag.cpp" />
+    <ClCompile Include="MemoryStream.cpp" />
     <ClCompile Include="TagFinder.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="HTML_Elements.html" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="MemoryStream.h" />
     <ClInclude Include="TagFinder.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

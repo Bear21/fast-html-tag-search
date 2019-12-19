@@ -2,25 +2,31 @@
 #include <cstdio>
 #include <string>
 #include <iostream>
+#include "MemoryStream.h"
 
 
 class TagFinder
 {
 private:
-   int readIndex;
+   MemoryStream& m_Stream;
+   bool m_Output;
+   
+   char m_Temp[8192];
 public:
-   TagFinder()
+   TagFinder(MemoryStream& stream, bool writeOutput)
+      :m_Stream(stream)
+      , m_Output(writeOutput)
    {
    }
 
    void Read()
    {
-      int c;
-      while ((c = getc(stdin)) != EOF) {
+      char c;
+      while (m_Stream.getChar(c) == MemoryStream::Success) {
          switch (c)
          {
          case '<':
-            findEnd();
+            FindEnd();
             break;
          default:
             break;
@@ -28,31 +34,40 @@ public:
       }
    }
 
-   void findEnd()
+   void FindEnd()
    {
-      std::string str;
-      int c;
-      while ((c = getc(stdin)) != EOF) {
-         str.push_back(c);
-         size_t length = str.length();
+      size_t length = 0;
+      char c;
+      while (m_Stream.getChar(c) == MemoryStream::Success) {
+         m_Temp[length++] = c;
 
          switch (c) {
          case '<':
             return;
          case '>':
-            std::cout << "Tag: " << str << std::endl;
+            m_Temp[length] = 0;
+            //std::cout << "Tag: " << m_Temp << std::endl;
+            if (m_Output)
+               printf("Tag: %s\n", m_Temp);
             return;
          case '/':
-            std::cout << ((str.length() == 1) ? "End Tag: " : "Tag: ") << str << findChar('>') << std::endl;
+         {
+            int foundLength = length;
+            FindChar('>', length);
+            m_Temp[length] = 0;
+            if (m_Output)
+               printf("%s%s\n", ((foundLength == 1) ? "End Tag: " : "Void Tag: "), m_Temp);
+            //std::cout << ((foundLength == 1) ? "End Tag: " : "Void Tag: ") << m_Temp << std::endl;
+         }
             return;
          case '"':
-            str = str + findChar('"');
+            FindChar('"', length);
             break;
          case '\'':
-            str = str + findChar('\'');
+            FindChar('\'', length);
             break;
          case '!':
-            exp();
+            Exp(length);
             return;
          default:
             break;
@@ -60,42 +75,38 @@ public:
       }
    }
 
-   std::string findChar(char match)
+   void FindChar(char match, size_t& length)
    {
-      std::string str;
-      int c;
-      while ((c = getc(stdin)) != EOF) {
-         str.push_back(c);
-         size_t length = str.length();
+      char c;
+      while (m_Stream.getChar(c) == MemoryStream::Success) {
+         m_Temp[length++] = c;
          if (c == match)
             break;
       }
-      return str;
    }
 
-   void exp()
+   void Exp(size_t& length)
    {
-      int c;
-      while ((c = getc(stdin)) != EOF) {
+      char c;
+      while (m_Stream.getChar(c) == MemoryStream::Success) {
          switch (c)
          {
          case '-':
-            return tryComment();
+            return TryComment(length);
          default:
-            this->findChar('>');
+            this->FindChar('>', length);
             return;
          }
       }
    }
 
-   void tryComment()
+   void TryComment(size_t& length)
    {
-      std::string str;
       int dashCount = 0;
       bool first = true;
-      int c;
-      while ((c = getc(stdin)) != EOF) {
-         str.push_back(c);
+      char c;
+      while (m_Stream.getChar(c) == MemoryStream::Success) {
+         m_Temp[length++] = c;
          switch (c)
          {
          case '-':
@@ -103,7 +114,10 @@ public:
             break;
          case '>':
             if (dashCount == 2) {
-               std::cout << "Comment: " << str << std::endl;
+               m_Temp[length] = 0;
+               if (m_Output)
+                  printf("Comment: %s\n", m_Temp);
+               //std::cout << "Comment: " << m_Temp << std::endl;
                return;
             }
          default:
